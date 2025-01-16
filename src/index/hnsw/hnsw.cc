@@ -152,8 +152,28 @@ class HnswIndexNode : public IndexNode {
             std::shuffle(shuffle_batch_ids.begin(), shuffle_batch_ids.end(), urng);
         }
         try {
-            index_->addPoint(tensor, 0);
+            //----------------------------------------------------------------------------------
+            // 创建一个二维数组来保存数据
+            auto dim = dataset->GetDim();
+            std::vector<std::vector<float>> floatArray2D(rows, std::vector<float>(dim));
+            float* ts = new float[rows * dim];
+            for (int i = 0; i < rows * dim; ++i) {
+                ts[i] = *((float*)(const_cast<void *>(tensor)) + i) * 0.5;
+                floatArray2D[i/dim][i%dim]=ts[i];
+                // std::cout << ts[i] << std::endl;
+            }
+            // for (const auto& row : floatArray2D) {
+            //     for (float value : row) {
+            //         std::cout << value << " ";
+            //     }
+            //     std::cout << std::endl;
+            // }
+            float* temp = ts;
+            ts = (float*)(const_cast<void *>(tensor));
+            tensor = const_cast<const void*>((void*)temp);
+            //--------------------------------------------------------------------------------
 
+            index_->addPoint(tensor, 0);
             futures.reserve(batch_size);
             for (int64_t round_id = 0; round_id < round_num; round_id++) {
                 int64_t start_id = (shuffle_build ? shuffle_batch_ids[round_id] : round_id) * batch_size;
@@ -184,6 +204,23 @@ class HnswIndexNode : public IndexNode {
                 }
                 WaitAllSuccess(futures);
             }
+
+            // replace
+            //float* ts = new float[rows * dim];
+            // float* temp1 = new float[dim];
+            // float* temp2 = new float[dim];
+            for(int id=0; id<rows; id++){
+                auto data = index_->data_level0_memory_ + id * index_->size_data_per_element_ + index_->offsetData_;
+                // std::memcpy(temp1,ts+id*dim,index_->data_size_);
+                // std::memcpy(temp2,(float*)data,index_->data_size_);
+                std::memcpy(data,(char*)(ts+id*dim),index_->data_size_);
+                // for (int i = 0; i < dim; i++) {
+                //     std::cout << temp1[i] << " xx " << temp2[i]<<" ";
+                // }
+                // std::cout << std::endl;
+            }
+            delete[] tensor;
+
             build_time.RecordSection("graph repair");
             LOG_KNOWHERE_INFO_ << "HNSW built with #points num:" << index_->max_elements_ << " #M:" << index_->M_
                                << " #max level:" << index_->maxlevel_
@@ -627,6 +664,7 @@ KNOWHERE_SIMPLE_REGISTER_DENSE_ALL_GLOBAL(HNSW_DEPRECATED, HnswIndexNode,
                                           knowhere::feature::MMAP | knowhere::feature::MV)
 #else
 KNOWHERE_SIMPLE_REGISTER_DENSE_ALL_GLOBAL(HNSW, HnswIndexNode, knowhere::feature::MMAP | knowhere::feature::MV)
+KNOWHERE_SIMPLE_REGISTER_DENSE_ALL_GLOBAL(OOD_HNSW, HnswIndexNode, knowhere::feature::MMAP | knowhere::feature::MV)
 #endif
 
 KNOWHERE_SIMPLE_REGISTER_DENSE_FLOAT_ALL_GLOBAL(HNSW_SQ8, HnswIndexNode, knowhere::feature::MMAP, QuantType::SQ8)

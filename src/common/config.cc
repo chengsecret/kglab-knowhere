@@ -60,7 +60,10 @@ static const std::unordered_set<std::string> ext_legal_json_keys = {"metric_type
                                                                     "round_decimal",
                                                                     "offset",
                                                                     "index_engine_version",
-                                                                    "reorder_k"};
+                                                                    "reorder_k",
+                                                                    "anchor_num",
+                                                                    "weight",
+                                                                    "train"};
 
 Status
 Config::FormatAndCheck(const Config& cfg, Json& json, std::string* const err_msg) {

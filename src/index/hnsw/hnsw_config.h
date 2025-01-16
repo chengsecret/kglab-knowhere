@@ -82,6 +82,57 @@ class HnswConfig : public BaseConfig {
     }
 };
 
+class OODHNSWConfig : public HnswConfig {
+ public:
+    CFG_INT anchor_num;
+    CFG_FLOAT weight;
+    CFG_STRING train;
+
+    KNOWHERE_CONFIG_DECLARE_FIELD(anchor_num)
+        .description("ood anchor_num")
+        .set_default(8)
+        .set_range(1, 10)
+        .for_train();
+    KNOWHERE_CONFIG_DECLARE_FIELD(weight)
+        .description("ood weight")
+        .set_default(0.7)
+        .set_range(0.1, 1.0)
+        .for_train();
+    KNOWHERE_CONFIG_DECLARE_FIELD(train)
+        .description("ood train")
+        .set_default("")
+        .for_train();
+
+    Status
+    CheckAndAdjust(PARAM_TYPE param_type, std::string* err_msg) override {
+        switch (param_type) {
+            case PARAM_TYPE::SEARCH: {
+                if (!ef.has_value()) {
+                    ef = std::max(k.value(), kEfMinValue);
+                } else if (k.value() > ef.value()) {
+                    if (err_msg) {
+                        *err_msg = "ef(" + std::to_string(ef.value()) + ") should be larger than k(" +
+                                   std::to_string(k.value()) + ")";
+                        LOG_KNOWHERE_ERROR_ << *err_msg;
+                    }
+                    return Status::out_of_range_in_json;
+                }
+                break;
+            }
+            case PARAM_TYPE::RANGE_SEARCH: {
+                if (!ef.has_value()) {
+                    // if ef is not set by user, set it to default
+                    ef = kDefaultRangeSearchEf;
+                }
+                break;
+            }
+            default:
+                break;
+        }
+        return Status::success;
+    }
+};
+
 }  // namespace knowhere
 
 #endif /* HNSW_CONFIG_H */

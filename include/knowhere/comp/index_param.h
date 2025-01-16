@@ -53,6 +53,8 @@ constexpr const char* INDEX_HNSW_SQ8 = "HNSW_SQ8";
 constexpr const char* INDEX_HNSW_SQ8_REFINE = "HNSW_SQ8_REFINE";
 constexpr const char* INDEX_DISKANN = "DISKANN";
 
+constexpr const char* INDEX_OOD_HNSW = "OOD_HNSW";
+
 constexpr const char* INDEX_FAISS_HNSW_FLAT = "FAISS_HNSW_FLAT";
 constexpr const char* INDEX_FAISS_HNSW_SQ = "FAISS_HNSW_SQ";
 constexpr const char* INDEX_FAISS_HNSW_PQ = "FAISS_HNSW_PQ";
@@ -155,6 +157,11 @@ constexpr const char* EFCONSTRUCTION = "efConstruction";
 constexpr const char* HNSW_M = "M";
 constexpr const char* EF = "ef";
 constexpr const char* OVERVIEW_LEVELS = "overview_levels";
+
+// OOD Params
+constexpr const char* ANCHOR_NUM = "anchor_num";
+constexpr const char* WEIGHT = "weight";
+constexpr const char* TRAIN = "train";
 
 // FAISS additional Params
 constexpr const char* SQ_TYPE = "sq_type";  // for IVF_SQ and HNSW_SQ
