@@ -88,20 +88,22 @@ class OODHNSWConfig : public HnswConfig {
     CFG_FLOAT weight;
     CFG_STRING train;
 
-    KNOWHERE_CONFIG_DECLARE_FIELD(anchor_num)
-        .description("ood anchor_num")
-        .set_default(8)
-        .set_range(1, 10)
-        .for_train();
-    KNOWHERE_CONFIG_DECLARE_FIELD(weight)
-        .description("ood weight")
-        .set_default(0.7)
-        .set_range(0.1, 1.0)
-        .for_train();
-    KNOWHERE_CONFIG_DECLARE_FIELD(train)
-        .description("ood train")
-        .set_default("")
-        .for_train();
+    KNOHWERE_DECLARE_CONFIG(OODHNSWConfig) {
+        KNOWHERE_CONFIG_DECLARE_FIELD(anchor_num)
+            .description("ood anchor_num")
+            .set_default(8)
+            .set_range(1, 10)
+            .for_train();
+        KNOWHERE_CONFIG_DECLARE_FIELD(weight)
+            .description("ood weight")
+            .set_default(0.7)
+            .set_range(0.1, 1.0)
+            .for_train();
+        KNOWHERE_CONFIG_DECLARE_FIELD(train)
+            .description("ood train")
+            .set_default("")
+            .for_train();
+    }
 
     Status
     CheckAndAdjust(PARAM_TYPE param_type, std::string* err_msg) override {
