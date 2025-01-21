@@ -141,21 +141,21 @@ class OODHnswIndexNode : public IndexNode {
     void fusionOOD(float* baseVecs, std::vector<std::vector<float>>& trainVecs,
                     int64_t anchor_num, const std::string metric_type, float weight, float* ts,
                     int64_t base_rows, int64_t dim){
-        // for (const std::vector<float>& baseVec : baseVecs) {
-            
-        // }
+        std::cout << "eeeeeeeeeeeeeeeeee" << std::endl;
         int64_t  train_rows = trainVecs.size();
         if(trainVecs[0].size() != dim){
             throw std::runtime_error("train中向量维度和base集维度必须相同");
         }
+        std::cout << "dddddddddddddddddd" << std::endl;
         // 创建索引
         faiss::Index* index;
         float* trains = new float[train_rows * dim];
-        for(int16_t i=0; i<train_rows; i++){
-            for(int16_t j=0; j<dim; j++){
+        for(int64_t i=0; i<train_rows; i++){
+            for(int64_t j=0; j<dim; j++){
                 trains[j + i*dim] = trainVecs[i][j];
             }
         }
+        std::cout << "cccccccccccccccc" << std::endl;
         if (IsMetricType(metric_type, metric::L2)) {
             index = new faiss::IndexFlat(dim);
         } else if (IsMetricType(metric_type, metric::IP)) {
@@ -166,19 +166,23 @@ class OODHnswIndexNode : public IndexNode {
         } else {
             throw std::runtime_error("Unsupported metric. Use 'L2', 'IP', or 'COSINE'.");
         }
+        std::cout << "aaaaaaaaaaaaaaa" << std::endl;
         // 添加数据库向量到索引
         index->add(train_rows, trains);
         if (IsMetricType(metric_type, metric::COSINE)) {
             faiss::fvec_renorm_L2(dim, base_rows, baseVecs);
         }
+        std::cout << "bbbbbbbbbbbbbbbb" << std::endl;
         std::vector<float> D(anchor_num * base_rows); // 用于存储距离
         std::vector<int64_t> I(anchor_num * base_rows); // 用于存储索引
         index->search(base_rows, baseVecs, anchor_num, D.data(), I.data());
+        std::cout << "111111111111111111111111111111111" << std::endl;
         for(int i=0; i<base_rows; i++){
             for(int j=0; j<dim; j++){
                 ts[j + i*dim] = 0;
             }
         }
+        std::cout << "222222222222222222222222222222222222222" << std::endl;
         for(int i=0; i<base_rows; i++){
             for(int j=0; j<anchor_num; j++){
                 float* vec = trains + I[i * anchor_num + j] * dim;  // 计算向量的起始位置
@@ -187,13 +191,30 @@ class OODHnswIndexNode : public IndexNode {
                 }
             }
         }
+        std::cout << "3333333333333333333333333333333333333" << std::endl;
         for(int i=0; i<base_rows * dim; i++){
             ts[i] = ts[i] / anchor_num * weight + baseVecs[i];
         }
+        std::cout << "444444444444444444444444444444" << std::endl;
 
         // 清理索引
         delete index;
         delete[] trains;
+    }
+
+    std::string readFileIntoString(const std::string& filename) {
+        std::ifstream file(filename);
+        if (!file.is_open()) {
+            LOG_KNOWHERE_ERROR_ << "无法打开文件:" << filename;
+            return "";
+        }
+
+        std::string content;
+        std::string line;
+        while (std::getline(file, line)) {
+            content += line + "\n";  // 逐行拼接，注意加上换行符
+        }
+        return content;
     }
 
     Status
@@ -235,32 +256,31 @@ class OODHnswIndexNode : public IndexNode {
             //----------------------------------------------------------------------------------
             // 创建一个二维数组来保存数据
             auto dim = dataset->GetDim();
-            std::string train = hnsw_cfg.train.value();
+            std::string trainFileName = hnsw_cfg.train.value();
             float weight = hnsw_cfg.weight.value();
             int64_t anchor_num = hnsw_cfg.anchor_num.value();
             auto metric_type  = hnsw_cfg.metric_type.value();
             
-            std::cout << train << std::endl;
-            // 解析JSON并填充向量
-            std::vector<std::vector<float>> trainVecs = parseJsonToFloatArray(train);
-            // 输出结果
-            for (const auto& vec : trainVecs) {
-                for (const auto& value : vec) {
-                    std::cout << value << " ";
-                }
-                std::cout << std::endl;
-            }
             float* baseVecs = new float[rows * dim];;
             float* ts = new float[rows * dim];
             for (int i = 0; i < rows * dim; ++i) {
                 baseVecs[i] = *((float*)(const_cast<void *>(tensor)) + i);
             }
-            try{
-                fusionOOD(baseVecs, trainVecs, anchor_num, metric_type, weight, ts, rows, dim);
-            }catch (std::exception& e) {
-                LOG_KNOWHERE_WARNING_ << "fusionOOD inner error: " << e.what();
-                for (int i = 0; i < rows * dim; ++i) {
-                    ts[i] = baseVecs[i];
+            std::cout << trainFileName << std::endl;
+            std::string train = readFileIntoString(trainFileName);
+            // std::cout << train << std::endl;
+            if (!train.empty()) {
+                try{
+                     // 解析JSON并填充向量
+                    std::vector<std::vector<float>> trainVecs = parseJsonToFloatArray(train);
+                     std::cout << "解析train成功" << std::endl;
+                    fusionOOD(baseVecs, trainVecs, anchor_num, metric_type, weight, ts, rows, dim);
+                     std::cout << "fusin成功" << std::endl;
+                }catch (std::exception& e) {
+                    LOG_KNOWHERE_WARNING_ << "fusionOOD inner error: " << e.what();
+                    for (int i = 0; i < rows * dim; ++i) {
+                        ts[i] = baseVecs[i];
+                    }
                 }
             }
             
